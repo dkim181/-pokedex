@@ -41,84 +41,58 @@ app.get("/", (req, res) => {
 });
 
 // Search Pokémon route
+// Search Pokémon route with description
 app.post("/searchPokemon", async (req, res) => {
     const query = req.body.query;
     const isNumber = /^[0-9]+$/.test(query);
+
     if (!query || query.trim() === '') {
         return res.render("index.ejs", { error: 'Please enter a valid name or number.' });
     }
-    const apiUrl = isNumber
+
+    // API URLs for Pokémon and Species Data
+    const pokemonApiUrl = isNumber
         ? `https://pokeapi.co/api/v2/pokemon/${query}`
         : `https://pokeapi.co/api/v2/pokemon/${query.toLowerCase()}`;
+    const speciesApiUrl = isNumber
+        ? `https://pokeapi.co/api/v2/pokemon-species/${query}`
+        : `https://pokeapi.co/api/v2/pokemon-species/${query.toLowerCase()}`;
+
     try {
-        const response = await axios.get(apiUrl);
+        const pokemonResponse = await axios.get(pokemonApiUrl);
+        const pokemonData = pokemonResponse.data;
+
+        const speciesResponse = await axios.get(speciesApiUrl);
+        const speciesData = speciesResponse.data;
+
+        const flavorTextEntry = speciesData.flavor_text_entries.find(
+            entry => entry.language.name === "en"
+        );
+
         const pokemon = {
-            name: response.data.name,
-            id: response.data.id,
-            image: response.data.sprites.front_default,
-            types: response.data.types.map(t => t.type.name).join(', ')
+            name: pokemonData.name,
+            id: pokemonData.id,
+            image: pokemonData.sprites.front_default,
+            types: pokemonData.types.map(t => t.type.name).join(', '),
+            description: flavorTextEntry
+                ? flavorTextEntry.flavor_text.replace(/\n|\f/g, ' ')
+                : "No description available."
         };
+
         await client.db(dbAndCollection.db).collection(dbAndCollection.collection).insertOne({
             query: query,
             name: pokemon.name,
             id: pokemon.id,
+            description: pokemon.description,
             date: new Date()
         });
+
         res.render("result.ejs", { pokemon });
     } catch (error) {
+        console.error("Error fetching Pokémon data:", error.message);
         res.render("index.ejs", { error: 'Pokemon not found. Please try again.' });
     }
 });
-
-// Proxy route for PokeAPI
-// app.get("/api/pokemon/:query", async (req, res) => {
-//     const query = req.params.query;
-//     const apiUrl = `https://pokeapi.co/api/v2/pokemon/${query}`;
-
-//     try {
-//         // Axios request with timeout
-//         const response = await axios.get(apiUrl, { timeout: 5000 }); // 5 seconds timeout
-//         res.json(response.data);
-//     } catch (error) {
-//         console.error("Error fetching data from PokeAPI:", error.message);
-//         res.status(error.response?.status || 500).send("Failed to fetch data from PokeAPI.");
-//     }
-// });
-
-
-
-// Search Pokémon route using the proxy
-// app.post("/searchPokemon", async (req, res) => {
-//     const query = req.body.query;
-//     const isNumber = /^[0-9]+$/.test(query);
-
-//     if (!query || query.trim() === '') {
-//         return res.render("index.ejs", { error: 'Please enter a valid name or number.' });
-//     }
-
-//     const apiUrl = `/api/pokemon/${isNumber ? query : query.toLowerCase()}`;
-
-//     try {
-//         const response = await axios.get(`http://localhost:${portNumber}${apiUrl}`); // Local proxy call
-//         const pokemon = {
-//             name: response.data.name,
-//             id: response.data.id,
-//             image: response.data.sprites.front_default,
-//             types: response.data.types.map(t => t.type.name).join(', ')
-//         };
-
-//         await client.db(dbAndCollection.db).collection(dbAndCollection.collection).insertOne({
-//             query: query,
-//             name: pokemon.name,
-//             id: pokemon.id,
-//             date: new Date()
-//         });
-//         res.render("result.ejs", { pokemon });
-//     } catch (error) {
-//         console.error("Error calling proxy route:", error.message);
-//         res.render("index.ejs", { error: 'Pokemon not found. Please try again.' });
-//     }
-// });
 
 
 // View search history route
