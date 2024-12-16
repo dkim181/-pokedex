@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="/styles.css">
+    <title>Search History</title>
+</head>
+<body>
+    <h1>Search History</h1>
+    <ul>
+        <% history.forEach(record => { %>
+            <li>
+                <strong><%= record.name %></strong> (#<%= record.id %>) 
+                (Searched on: <%= new Date(record.date).toLocaleString() %>)
+            </li>
+        <% }) %>
+    </ul>
+    <form action="/clearHistory" method="POST">
+        <button type="submit">Clear History</button>
+    </form>
+    <a href="/">Back to Home</a>
+</body>
+</html>

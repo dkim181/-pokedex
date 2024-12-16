@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href= "/styles.css">
+    <title>Pokedex</title>
+</head>
+<body>
+    <h1>Pokedex</h1>
+    <form action="/searchPokemon" method="POST">
+        <p class="search-instructions">
+            Please enter either a Pokémon name or its Pokédex number (e.g., Pikachu or 25). Do not enter both.
+        </p>
+        <input type="text" name="query" placeholder="Pokemon name or number">
+        <button type="submit">Search</button>
+    </form>
+    <% if (typeof error !== 'undefined' && error) { %>
+        <p style="color: red;"><%= error %></p>
+    <% } %>
+    <a href="/history">View Search History</a>
+</body>
+</html>
