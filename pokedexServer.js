@@ -4,7 +4,9 @@ const bodyParser = require("body-parser");
 const path = require("path");
 const axios = require("axios");
 
-const portNumber = process.env.PORT || 3000;
+// const portNumber = process.env.PORT || 3000;
+const portNumber = Number(process.argv[2]);
+
 
 const app = express();
 
@@ -26,10 +28,35 @@ const uri = `mongodb+srv://${user}:${password}@cluster0.fb4wh.mongodb.net/?retry
 let client = new MongoClient(uri);
 process.stdin.setEncoding("utf8");
 
+// let server = app.listen(portNumber, async () => {
+//     console.log(`Web server started and running on port ${portNumber}`);
+//     await client.connect();
+// });
+
 let server = app.listen(portNumber, async () => {
-    console.log(`Web server started and running on port ${portNumber}`);
+    console.log(`Web server started and running at http://localhost:${portNumber}`);
+    console.log(`Stop to shutdown the server: `);
     await client.connect();
 });
+
+process.stdin.on("readable", () => {
+    const dataInput = process.stdin.read();
+    if (dataInput !== null) {
+        const instruction = dataInput.toString().trim().toLowerCase();
+        if (instruction === "stop") {
+            shutdownServer();
+        }
+    }
+});
+
+function shutdownServer() {
+    console.log("Shutting down the server");
+    server.close(() => {
+        client.close();
+        process.exit(0); 
+    });
+}
+
 
 app.use((req, res, next) => {
     res.locals.error = null;
