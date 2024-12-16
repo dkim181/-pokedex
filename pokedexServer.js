@@ -3,9 +3,13 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const path = require("path");
 const axios = require("axios");
+const cors = require('cors');
+
 const portNumber = process.env.PORT || 3000;
 
 const app = express();
+app.use(cors());
+
 app.use('/styles.css', express.static(__dirname + '/styles.css'));
 
 require("dotenv").config({ path: path.resolve(__dirname, 'credentials/.env') });
