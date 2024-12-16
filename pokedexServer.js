@@ -95,7 +95,12 @@ app.post("/searchPokemon", async (req, res) => {
 // View search history route
 app.get("/history", async (req, res) => {
     const history = await client.db(dbAndCollection.db).collection(dbAndCollection.collection).find({}).toArray();
-    res.render("history.ejs", { history });
+    
+    if (history.length === 0) {
+        res.render("emptyHistory.ejs");
+    } else {
+        res.render("history.ejs", { history });
+    }
 });
 
 // Clear search history route
