@@ -29,9 +29,9 @@ let client = new MongoClient(uri);
 process.stdin.setEncoding("utf8");
 
 
-app.listen(portNumber, () => {
+app.listen(portNumber, async () => {
     console.log(`WebServer started and running at http://localhost:${portNumber}`);
-    process.stdout.write(prompt);
+    await client.connect();
 });
 
 // let server = app.listen(portNumber, async () => {
