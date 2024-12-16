@@ -3,16 +3,11 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const path = require("path");
 const axios = require("axios");
-
-//const portNumber = Number(process.argv[2]);
 const portNumber = process.env.PORT || 1000;
-
-
 const app = express();
-
 app.use('/styles.css', express.static(__dirname + '/styles.css'));
-
 require("dotenv").config({ path: path.resolve(__dirname, 'credentials/.env') });
+
 const user = process.env.MONGO_DB_USERNAME;
 const password = process.env.MONGO_DB_PASSWORD;
 const dbAndCollection = { db: process.env.MONGO_DB_NAME, collection: process.env.MONGO_COLLECTION };
@@ -34,30 +29,6 @@ app.listen(portNumber, async () => {
     await client.connect();
 });
 
-// let server = app.listen(portNumber, async () => {
-//     console.log(`Web server started and running at http://localhost:${portNumber}`);
-//     console.log(`Stop to shutdown the server: `);
-//     await client.connect();
-// });
-
-// process.stdin.on("readable", () => {
-//     const dataInput = process.stdin.read();
-//     if (dataInput !== null) {
-//         const instruction = dataInput.toString().trim().toLowerCase();
-//         if (instruction === "stop") {
-//             shutdownServer();
-//         }
-//     }
-// });
-
-// function shutdownServer() {
-//     console.log("Shutting down the server");
-//     server.close(() => {
-//         client.close();
-//         process.exit(0); 
-//     });
-// }
-
 
 app.use((req, res, next) => {
     res.locals.error = null;
@@ -69,43 +40,24 @@ app.get("/", (req, res) => {
     res.render("index.ejs");
 });
 
-// Proxy route for PokeAPI
-app.get("/api/pokemon/:query", async (req, res) => {
-    const query = req.params.query;
-    const apiUrl = `https://pokeapi.co/api/v2/pokemon/${query}`;
-
-    try {
-        // Axios request with timeout
-        const response = await axios.get(apiUrl, { timeout: 5000 }); // 5 seconds timeout
-        res.json(response.data);
-    } catch (error) {
-        console.error("Error fetching data from PokeAPI:", error.message);
-        res.status(error.response?.status || 500).send("Failed to fetch data from PokeAPI.");
-    }
-});
-
-
-
-// Search Pokémon route using the proxy
+// Search Pokémon route
 app.post("/searchPokemon", async (req, res) => {
     const query = req.body.query;
     const isNumber = /^[0-9]+$/.test(query);
-
     if (!query || query.trim() === '') {
         return res.render("index.ejs", { error: 'Please enter a valid name or number.' });
     }
-
-    const apiUrl = `/api/pokemon/${isNumber ? query : query.toLowerCase()}`;
-
+    const apiUrl = isNumber
+        ? `https://pokeapi.co/api/v2/pokemon/${query}`
+        : `https://pokeapi.co/api/v2/pokemon/${query.toLowerCase()}`;
     try {
-        const response = await axios.get(`http://localhost:${portNumber}${apiUrl}`); // Local proxy call
+        const response = await axios.get(apiUrl);
         const pokemon = {
             name: response.data.name,
             id: response.data.id,
             image: response.data.sprites.front_default,
             types: response.data.types.map(t => t.type.name).join(', ')
         };
-
         await client.db(dbAndCollection.db).collection(dbAndCollection.collection).insertOne({
             query: query,
             name: pokemon.name,
@@ -114,10 +66,59 @@ app.post("/searchPokemon", async (req, res) => {
         });
         res.render("result.ejs", { pokemon });
     } catch (error) {
-        console.error("Error calling proxy route:", error.message);
         res.render("index.ejs", { error: 'Pokemon not found. Please try again.' });
     }
 });
+
+// Proxy route for PokeAPI
+// app.get("/api/pokemon/:query", async (req, res) => {
+//     const query = req.params.query;
+//     const apiUrl = `https://pokeapi.co/api/v2/pokemon/${query}`;
+
+//     try {
+//         // Axios request with timeout
+//         const response = await axios.get(apiUrl, { timeout: 5000 }); // 5 seconds timeout
+//         res.json(response.data);
+//     } catch (error) {
+//         console.error("Error fetching data from PokeAPI:", error.message);
+//         res.status(error.response?.status || 500).send("Failed to fetch data from PokeAPI.");
+//     }
+// });
+
+
+
+// Search Pokémon route using the proxy
+// app.post("/searchPokemon", async (req, res) => {
+//     const query = req.body.query;
+//     const isNumber = /^[0-9]+$/.test(query);
+
+//     if (!query || query.trim() === '') {
+//         return res.render("index.ejs", { error: 'Please enter a valid name or number.' });
+//     }
+
+//     const apiUrl = `/api/pokemon/${isNumber ? query : query.toLowerCase()}`;
+
+//     try {
+//         const response = await axios.get(`http://localhost:${portNumber}${apiUrl}`); // Local proxy call
+//         const pokemon = {
+//             name: response.data.name,
+//             id: response.data.id,
+//             image: response.data.sprites.front_default,
+//             types: response.data.types.map(t => t.type.name).join(', ')
+//         };
+
+//         await client.db(dbAndCollection.db).collection(dbAndCollection.collection).insertOne({
+//             query: query,
+//             name: pokemon.name,
+//             id: pokemon.id,
+//             date: new Date()
+//         });
+//         res.render("result.ejs", { pokemon });
+//     } catch (error) {
+//         console.error("Error calling proxy route:", error.message);
+//         res.render("index.ejs", { error: 'Pokemon not found. Please try again.' });
+//     }
+// });
 
 
 // View search history route
