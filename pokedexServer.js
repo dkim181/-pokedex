@@ -5,7 +5,7 @@ const path = require("path");
 const axios = require("axios");
 
 //const portNumber = Number(process.argv[2]);
-const portNumber = process.env.PORT || 10000;
+const portNumber = process.env.PORT || 1000;
 
 
 const app = express();
