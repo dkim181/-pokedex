@@ -24,10 +24,30 @@ let client = new MongoClient(uri);
 process.stdin.setEncoding("utf8");
 
 
-app.listen(portNumber, async () => {
+let server = app.listen(portNumber, async () => {
     console.log(`WebServer started and running at http://localhost:${portNumber}`);
+    console.log(`Stop to shutdown the server: `);
     await client.connect();
 });
+
+process.stdin.on("readable", () => {
+    const dataInput = process.stdin.read();
+    if (dataInput !== null) {
+        const instruction = dataInput.toString().trim().toLowerCase();
+        if (instruction === "stop") {
+            shutdownServer();
+        }
+    }
+});
+
+function shutdownServer() {
+    console.log("Shutting down the server");
+    server.close(() => {
+        client.close();
+        process.exit(0); 
+    });
+}
+
 
 
 app.use((req, res, next) => {
@@ -89,7 +109,6 @@ app.post("/searchPokemon", async (req, res) => {
 
         res.render("result.ejs", { pokemon });
     } catch (error) {
-        console.error("Error fetching Pokémon data:", error.message);
         res.render("index.ejs", { error: 'Pokemon not found. Please try again.' });
     }
 });
